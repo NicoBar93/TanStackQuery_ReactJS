@@ -1,10 +1,13 @@
-import { Link, Outlet, useParams } from "react-router-dom";
+import { Link, Outlet, useParams, useNavigate } from "react-router-dom";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import Header from "../Header.jsx";
 import ErrorBlock from "../UI/ErrorBlock.jsx";
 import { fetchEvent, deleteEvent } from "../../util/Fetch";
+import { queryClient } from "../../util/Fetch";
+
 
 export default function EventDetails({}) {
+  const navigate = useNavigate();
   const { mutate, isPending } = useMutation({
     mutationFn: deleteEvent,
     onSuccess: () => {
