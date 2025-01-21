@@ -1,16 +1,16 @@
-import LoadingIndicator from '../UI/LoadingIndicator.jsx';
-import ErrorBlock from '../UI/ErrorBlock.jsx';
-import EventItem from './EventItem.jsx';
-import { useQuery } from '@tanstack/react-query';
-import { fetchEvents } from '../../util/Fetch.js';
+import LoadingIndicator from "../UI/LoadingIndicator.jsx";
+import ErrorBlock from "../UI/ErrorBlock.jsx";
+import EventItem from "./EventItem.jsx";
+import { useQuery } from "@tanstack/react-query";
+import { fetchEvents } from "../../util/Fetch.js";
 
 export default function NewEventsSection() {
   const { data, isPending, isError, error } = useQuery({
-    queryKey: ['events'],
-    queryFn: fetchEvents,
-    // staleTime: 5000,   How long it takes to make a new request
+    queryKey: ["events", { max: 2 }],
+    queryFn: ({ signal, queryKey }) => fetchEvents({ signal, ...queryKey[1] }),
+    staleTime: 5000,   // How long it takes to make a new request
     // gcTime: 60000,     How long it keeps the data in the cache
-  })
+  });
 
   let content;
 
@@ -20,7 +20,10 @@ export default function NewEventsSection() {
 
   if (isError) {
     content = (
-      <ErrorBlock title="An error occurred" message={error.info?.message || 'Failed to fetch events'} />
+      <ErrorBlock
+        title="An error occurred"
+        message={error.info?.message || "Failed to fetch events"}
+      />
     );
   }
 
@@ -37,7 +40,10 @@ export default function NewEventsSection() {
   }
 
   return (
-    <section className="content-section" id="new-events-section">
+    <section
+      className="content-section"
+      id="new-events-section"
+    >
       <header>
         <h2>Recently added events</h2>
       </header>

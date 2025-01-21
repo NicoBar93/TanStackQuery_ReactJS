@@ -11,7 +11,17 @@ export default function EventDetails({}) {
   const [isDeleting, setIsDeleting] = useState(false);
   const navigate = useNavigate();
 
-  // DELETE FUNCTIONALITY 
+  
+  // FETCHING EVENT DETAILS
+  const params = useParams();
+  const id = params.id;
+  
+  const { data, isPending, isError, error } = useQuery({
+    queryKey: ["events", id],
+    queryFn: ({ signal }) => fetchEvent({ id, signal }),
+  });
+
+  // DELETE FUNCTIONALITY
   const {
     mutate,
     isPending: isPendingDelete,
@@ -21,7 +31,7 @@ export default function EventDetails({}) {
     mutationFn: deleteEvent,
     onSuccess: () => {
       queryClient.invalidateQueries({
-        queryKey: ["events"],
+        queryKey: ["events", id],
         // refetchType: "none",
       });
       navigate("/events");
@@ -40,92 +50,82 @@ export default function EventDetails({}) {
     setIsDeleting(true);
   }
 
-  
-  // FETCHING EVENT DETAILS 
-  const params = useParams();
-  const id = params.id;
+  let content;
 
-  const { data, isPending, isError, error } = useQuery({
-    queryKey: ["event", id],
-    queryFn: () => fetchEvent({ id }),
-  });
+  if (isPending) {
+    content = (
+      <div id='event-details-content' className="center">
+        <p>Fetching event data...</p>
+      </div>
+    );
+  }
+
+  if (isError) {
+    content = (
+      <ErrorBlock
+        title="An error occurred"
+        message={error.info?.message || 'Failed to fetch event'}
+      />
+    );
+  }
+
+  if (data) {
+
+    content = (
+      <>
+        {isDeleting && (
+          <Modal onClose={handleStopDelete}>
+            <h2>Are you sure?</h2>
+            <p>Do you really want to delete this event?</p>
+            <div className='form-actions'>
+              {isPendingDelitation && <p>Deleting, please wait...</p>}
+              {!isPendingDelitation && (
+                <>
+                  <button onClick={handleStopDelete} className='button-text'>Cancel</button>
+                  <button onClick={handleDelete} className='button'>Delete</button>
+                </>
+              )}
+            </div>
+            {isErrorDeleting && (
+              <ErrorBlock
+                title="An error occurred"
+                message={deleteError.info?.message || 'Failed to delete event'}>
+              </ErrorBlock>)
+            }
+          </Modal>
+        )}
+        <header>
+          <h1>{data.title}</h1>
+          <nav>
+            <button onClick={handleStartDelete}>Delete</button>
+            <Link to="edit">Edit</Link>
+          </nav>
+        </header>
+        <div id="event-details-content">
+          <img src={`http://localhost:3000/${data.image}`} alt={data.title} />
+          <div id="event-details-info">
+            <div>
+              <p id="event-details-location">{data.location}</p>
+              <time dateTime={`Todo-DateT$Todo-Time`}>{data.date} @ {data.time}</time>
+            </div>
+            <p id="event-details-description">{data.description}</p>
+          </div>
+        </div>
+      </>
+    )
+  }
 
   return (
     <>
-      {isDeleting && (
-        <Modal onClose={handleStopDelete}>
-          <h2>Are you sure?</h2>
-          <p>Do you really want to delete this event?</p>
-          <div className="form-actions">
-            {isPendingDelete && <p>Deleting. Please wait...</p>}
-            {!isPendingDelete && (
-              <>
-                <button
-                  onClick={handleStopDelete}
-                  className="button-text"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleDelete}
-                  className="button-text"
-                >
-                  Delete
-                </button>
-              </>
-            )}
-          </div>
-          {isErrorDeleting && (
-            <ErrorBlock
-              message={errorDelete.info?.message || "Failed to delete event"}
-            />
-          )}
-        </Modal>
-      )}
       <Outlet />
       <Header>
-        <Link
-          to="/events"
-          className="nav-item"
-        >
+        <Link to="/events" className="nav-item">
           View all Events
         </Link>
       </Header>
-      {isPending && <p>Loading data...</p>}
-      {data && (
-        <article id="event-details">
-          <header>
-            <h1>{data.event.title}</h1>
-            <nav>
-              <button onClick={handleStartDelete}>
-                {isPending ? "Deleting..." : "Delete"}
-              </button>
-              <Link to="edit">Edit</Link>
-            </nav>
-          </header>
-          <div id="event-details-content">
-            <img
-              src={`http://localhost:3000/${data.event.image}`}
-              alt={data.event.title}
-            />
-            <div id="event-details-info">
-              <div>
-                <p id="event-details-location">{data.event.location}</p>
-                <time dateTime={`Todo-DateT$Todo-Time`}>
-                  {data.event.date} @ {data.event.time}
-                </time>
-              </div>
-              <p id="event-details-description">{data.event.description}</p>
-            </div>
-          </div>
-        </article>
-      )}
-      {isError && (
-        <ErrorBlock
-          title="An error occurred"
-          message={error.info?.message || "Failed to fetch event datails"}
-        />
-      )}
+      <article id="event-details">
+        {content}
+      </article>
     </>
   );
 }
